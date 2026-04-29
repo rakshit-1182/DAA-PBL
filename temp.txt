@@ -1,0 +1,4 @@
+2001 java,micro,daa,automata ai
+2002 java,micro,daa,automata cloud
+2003 java,micro,daa,automata cyber
+2004 java,micro,daa,automata stats
