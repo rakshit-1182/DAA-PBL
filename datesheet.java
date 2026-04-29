@@ -3,6 +3,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.TreeMap;
+import com.lowagie.text.*;
+import com.lowagie.text.pdf.*;
+import java.io.FileOutputStream;
+
 //importing the time-slots data from the exam-scheduling class;
 //importing the data of core and elective students to print the datesheet
 
@@ -34,6 +38,86 @@ ROW1(roll_no.)       ROW2(roll_no)     ROW3(roll_no)     ROW4(roll_no)
 */
 
 public class datesheet {
+    public static void generateDatesheetPDF(
+            Map<Integer, List<String>> map,
+            int startDay, int month,
+            String time, String type) throws Exception {
+
+        Document document = new Document();
+        PdfWriter.getInstance(document, new FileOutputStream("datesheet.pdf"));
+        document.open();
+
+        document.add(new Paragraph("EXAM DATE SHEET"));
+        document.add(new Paragraph(" "));
+
+        PdfPTable table = new PdfPTable(3);
+        table.setWidthPercentage(100);
+
+        table.addCell("Subject");
+        table.addCell("Date");
+        table.addCell("Time");
+
+        int s_day = startDay;
+
+        for (int slot : map.keySet()) {
+            for (String sub : map.get(slot)) {
+
+                table.addCell(sub.toUpperCase());
+                table.addCell(s_day + "/" + month);
+                table.addCell(time);
+            }
+
+            if (type.equalsIgnoreCase("end"))
+                s_day += 2;
+            else
+                s_day++;
+
+            if (s_day >= 31) {
+                s_day = 1;
+                month++;
+            }
+        }
+
+        document.add(table);
+        document.close();
+    }
+
+    public static void generateSeatingPDF(List<int[][]> allSeating, Room[] rooms) throws Exception {
+
+        Document document = new Document();
+        PdfWriter.getInstance(document, new FileOutputStream("seating.pdf"));
+        document.open();
+
+        Font titleFont = new Font(Font.HELVETICA, 16, Font.BOLD);
+        Paragraph title = new Paragraph("SEATING PLAN\n\n", titleFont);
+        title.setAlignment(Element.ALIGN_CENTER);
+        document.add(title);
+
+        for (int i = 0; i < allSeating.size(); i++) {
+
+            document.add(new Paragraph("\nRoom: " + rooms[i].roomName));
+
+            int[][] seating = allSeating.get(i);
+
+            PdfPTable table = new PdfPTable(seating[0].length);
+            table.setWidthPercentage(100);
+
+            for (int c = 0; c < seating[0].length; c++) {
+                table.addCell("COL " + (c + 1));
+            }
+
+            for (int r = 0; r < seating.length; r++) {
+                for (int c = 0; c < seating[r].length; c++) {
+                    table.addCell(String.valueOf(seating[r][c]));
+                }
+            }
+
+            document.add(table);
+        }
+
+        document.close();
+    }
+
     public static void printdatesheet() throws Exception {
 
         Object[] result = ExamScheduler.getTimeSlots("students.txt");
@@ -48,11 +132,15 @@ public class datesheet {
         System.out.println("Enter the time of examination: ");
         String time = sc.nextLine();
 
-        System.out.println("--------------OUTPUT-1 (EXAM SCHEDULE/DATESHEET)-------------------------");
-        System.out.println("---------------------------------------");
-        System.out.println("subject | date | time-slot (clock-time)");
-        System.out.println("--------|------|------------------------");
-
+        /*
+         * System.out.
+         * println("--------------OUTPUT-1 (EXAM SCHEDULE/DATESHEET)-------------------------"
+         * );
+         * System.out.println("---------------------------------------");
+         * System.out.println("subject | date | time-slot (clock-time)");
+         * System.out.println("--------|------|------------------------");
+         * 
+         */
         Map<Integer, List<String>> map = new TreeMap<>();
 
         for (int i = 0; i < subjects.length; i++) {
@@ -60,36 +148,39 @@ public class datesheet {
             map.get(color[i]).add(subjects[i]);
         }
 
-        String parts[]=date.split("/");
-        int s_day=Integer.parseInt(parts[0]);
-        int month=Integer.parseInt(parts[1]);
+        String parts[] = date.split("/");
+        int s_day = Integer.parseInt(parts[0]);
+        int month = Integer.parseInt(parts[1]);
+        generateDatesheetPDF(map, s_day, month, time, type);
 
-        for (int slot : map.keySet()) {
-
-            List<String> subList = map.get(slot);
-
-            for (String sub : subList) {
-
-                System.out.printf("%-8s| %-5s|   %s\n",
-                        sub.toUpperCase(),
-                        s_day + "/"+ month,
-                        time);
-
-                System.out.println("--------|------|------------------------");
-            }
-
-            if (type.equalsIgnoreCase("end")) {
-                s_day += 2;
-            } else {
-                s_day++;
-            }
-            if(s_day>=31){
-                s_day=1;
-                month++;
-            }
-        }
-
-        System.out.println("------------------------------------------------------------------------");
+        /*
+         * for (int slot : map.keySet()) {
+         * 
+         * List<String> subList = map.get(slot);
+         * 
+         * for (String sub : subList) {
+         * 
+         * System.out.printf("%-8s| %-5s|   %s\n",
+         * sub.toUpperCase(),
+         * s_day + "/"+ month,
+         * time);
+         * 
+         * System.out.println("--------|------|------------------------");
+         * }
+         * 
+         * if (type.equalsIgnoreCase("end")) {
+         * s_day += 2;
+         * } else {
+         * s_day++;
+         * }
+         * if(s_day>=31){
+         * s_day=1;
+         * month++;
+         * }
+         * }
+         * System.out.println(
+         * "------------------------------------------------------------------------");
+         */
     }
 
     public static void printShiftWiseSeating(List<Integer> students, Room[] rooms) {
@@ -218,7 +309,7 @@ public class datesheet {
 
             System.out.println("\n Not enough rooms!");
             System.out.println("Remaining students: " + remaining);
-        
+
             System.out.println("\nChoose option:");
             System.out.println("1. Add more rooms");
             System.out.println("2. Create new time slot");
@@ -227,12 +318,12 @@ public class datesheet {
 
             if (choice == 1) {
                 System.out.print("Enter number of rooms: ");
-                int nw= Integer.parseInt(sc.nextLine());
+                int nw = Integer.parseInt(sc.nextLine());
 
-                Room newrooms[]= new Room[r+nw];
+                Room newrooms[] = new Room[r + nw];
 
-                for(int i=0;i<r;i++){
-                    newrooms[i]=rooms[i];
+                for (int i = 0; i < r; i++) {
+                    newrooms[i] = rooms[i];
                 }
 
                 for (int i = 0; i < nw; i++) {
@@ -242,11 +333,11 @@ public class datesheet {
                     System.out.print("Enter capacity: ");
                     int cap = Integer.parseInt(sc.nextLine());
 
-                    newrooms[r+i] = new Room(name, cap);
+                    newrooms[r + i] = new Room(name, cap);
                 }
-                rooms=newrooms;
-                r=rooms.length;
-                index=0;
+                rooms = newrooms;
+                r = rooms.length;
+                index = 0;
                 allSeating.clear();
                 for (Room room : rooms) {
 
@@ -262,18 +353,17 @@ public class datesheet {
 
                     remaining = students.size() - index;
                 }
-                System.out.println("Remaining Students: "+remaining);
-            } 
-            else if (choice == 2) {
+                System.out.println("Remaining Students: " + remaining);
+            } else if (choice == 2) {
                 System.out.println(" Create another shift for remaining students.");
                 datesheet.printShiftWiseSeating(students, rooms);
 
-            }
-            else {
+            } else {
                 System.out.println("Invalid choice.");
             }
-            
+
         }
+        generateSeatingPDF(allSeating, rooms);
     }
 
     public static void main(String[] args) throws Exception {
@@ -281,4 +371,3 @@ public class datesheet {
         datesheet.seating_plan();
     }
 }
-// hello
